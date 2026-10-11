@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -170,6 +170,15 @@ select.text{padding:9px 8px}
 @keyframes flash{0%,100%{background:transparent}40%{background:var(--gold-soft)}}
 .addtodo{display:grid;grid-template-columns:1fr auto auto;gap:8px}
 
+/* counter */
+.counter.ok{border-color:var(--good)}
+.counter .meter i{background:var(--gold)} .counter.ok .meter i{background:var(--good)}
+.cnum{font-family:var(--f-display);font-size:18px;color:var(--muted)}
+.cnum b{font-size:34px;color:var(--ink)}
+.cbtns{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:8px}
+.cbtns button{padding:14px 8px;font-size:17px}
+.wchart{width:100%;height:auto;display:block}
+.wchart text{fill:var(--muted);font-size:11px;font-family:var(--f-mono)}
 /* sprint */
 .clock{font-family:var(--f-mono);font-weight:700;font-size:30px;color:var(--mind)}
 .sprint.run{border-color:var(--mind);border-width:2px}
@@ -368,26 +377,40 @@ const BONUS={block:20,core:20,perfect:50,boss:60,sprint:15,closeUnder:10,save:40
 const SPRINT_MIN=15,SPRINT_MAX_DAY=6,MAX_BACK=14,SHIELD_EVERY=7,SHIELD_MAX=3,REPAIR_WINDOW=3,REPAIR_EXTRA=2;
 const diffD=(a,b)=>Math.round((parse(b)-parse(a))/864e5);
 const RANKS=[[1,"Новобранец"],[3,"Ученик"],[5,"Подмастерье"],[8,"Боец"],[12,"Ветеран"],[16,"Мастер"],[22,"Магистр"],[30,"Легенда"]];
+/* type "counter": done when the day's count reaches target; id "weigh": done when a weight is logged; id "money": done when the money day is closed */
+const HABITS_VER=2;
 const DEFAULT_HABITS=[
-  {id:"wake6",time:"morning",cat:"body",diff:"hard",name:"Подъём в 6:00",why:"Тихие утренние часы, пока никто не отвлекает"},
-  {id:"bed",time:"morning",cat:"home",diff:"easy",core:true,name:"Заправить кровать",why:"Первая победа дня за одну минуту"},
-  {id:"vitamins",time:"morning",cat:"body",diff:"easy",core:true,name:"Витамины",why:"Положи баночку рядом с зубной щёткой — не забудешь"},
-  {id:"teeth",time:"morning",cat:"body",diff:"easy",name:"Почистить зубы утром",why:"Две минуты, и свежесть на весь день"},
-  {id:"workout",time:"morning",cat:"body",diff:"mid",name:"Зарядка 10 минут",why:"Разгоняет тело и голову лучше кофе"},
-  {id:"trash",time:"morning",cat:"home",diff:"easy",name:"Вынести мусор",why:"Захвати пакет по пути на работу"},
-  {id:"water",time:"day",cat:"body",diff:"easy",name:"Выпить 2 литра воды",why:"Меньше усталости и головной боли к вечеру"},
-  {id:"food",time:"day",cat:"body",diff:"mid",name:"Нормальная еда без фастфуда",why:"Ровная энергия без провалов после обеда"},
-  {id:"walk",time:"day",cat:"body",diff:"mid",name:"Прогулка: 7000 шагов",why:"Свежий воздух и перезагрузка головы"},
-  {id:"english",time:"day",cat:"mind",diff:"mid",name:"15 минут английского",why:"Короткая практика каждый день работает лучше редких марафонов"},
-  {id:"noscroll",time:"day",cat:"mind",diff:"hard",name:"Час без ленты и соцсетей",why:"Вернуть внимание себе. Телефон в другую комнату"},
-  {id:"noporn",time:"day",cat:"mind",diff:"hard",name:"День без порно",why:"Энергия и внимание остаются на твои цели"},
-  {id:"money",time:"evening",cat:"money",diff:"mid",core:true,name:"Записать траты за день",why:"Сверься с банковским приложением. Отмечается и во вкладке «Деньги»"},
-  {id:"dishes",time:"evening",cat:"home",diff:"easy",name:"Раковина пустая",why:"Помыть посуду, чтобы утро не начиналось с завала"},
-  {id:"tidy15",time:"evening",cat:"home",diff:"mid",name:"15 минут уборки",why:"Таймер на 15 минут, потом можно остановиться"},
-  {id:"zone",time:"evening",cat:"home",diff:"mid",name:"Разобрать одну зону",why:"Стол, полка или ящик. Маленький участок порядка каждый день"},
-  {id:"read",time:"evening",cat:"mind",diff:"mid",name:"Прочитать 20 страниц",why:"20 страниц в день — это около 25 книг в год"},
-  {id:"shower",time:"evening",cat:"body",diff:"easy",name:"Душ вечером",why:"Смыть день и легче заснуть"},
-  {id:"teeth_pm",time:"evening",cat:"body",diff:"easy",name:"Почистить зубы вечером",why:"Последнее дело перед сном"}
+  {id:"pushups",time:"any",cat:"body",diff:"hard",core:true,type:"counter",target:100,step:25,name:"100 отжиманий",why:"50 утром + 50 вечером. Жми +25 после подхода"},
+  {id:"wake6",time:"morning",cat:"body",diff:"hard",name:"Подъём в 6:00",why:"Без «ещё 5 минут». Будильник подальше от кровати"},
+  {id:"water_am",time:"morning",cat:"body",diff:"easy",name:"Стакан воды после подъёма",why:"Будит организм и запускает обмен веществ"},
+  {id:"bed",time:"morning",cat:"home",diff:"easy",name:"Заправить кровать",why:"Минута, и первая победа дня"},
+  {id:"vitamins",time:"morning",cat:"body",diff:"easy",core:true,name:"Витамины",why:"Баночка рядом с зубной щёткой, чтобы не забыть"},
+  {id:"weigh",time:"morning",cat:"body",diff:"easy",name:"Взвешивание натощак",why:"После туалета, до еды. График — во вкладке «Прогресс»"},
+  {id:"cold",time:"morning",cat:"body",diff:"mid",name:"Контрастный душ 2 минуты",why:"Бодрит лучше кофе, закаляет"},
+  {id:"protein",time:"morning",cat:"body",diff:"mid",name:"Белковый завтрак без сладкого",why:"Яйца, творог, мясо. Сытость до обеда"},
+  {id:"nophone",time:"morning",cat:"mind",diff:"mid",name:"30 минут без телефона",why:"Утро твоё, а не ленты"},
+  {id:"budget",time:"morning",cat:"money",diff:"easy",name:"Посмотреть лимит на сегодня",why:"Отмечается само, когда открываешь вкладку «Деньги»"},
+  {id:"steps",time:"day",cat:"body",diff:"mid",name:"10 000 шагов",why:"Главный сжигатель калорий при офисной работе"},
+  {id:"stairs",time:"day",cat:"body",diff:"easy",name:"Лестница вместо лифта",why:"Бесплатная тренировка ног"},
+  {id:"standup",time:"day",cat:"body",diff:"easy",name:"Каждый час встать и пройтись",why:"2–3 минуты: шаги плюс спина скажет спасибо"},
+  {id:"water",time:"day",cat:"body",diff:"easy",name:"2 литра воды",why:"Бутылка на столе — пьёшь, не замечая"},
+  {id:"nosugar",time:"day",cat:"body",diff:"hard",name:"Без сахара, фастфуда и газировки",why:"Самый быстрый способ сбросить вес"},
+  {id:"nobet",time:"day",cat:"money",diff:"hard",core:true,name:"Без ставок",why:"Деньги остаются у тебя"},
+  {id:"txnow",time:"day",cat:"money",diff:"easy",name:"Каждую трату записать сразу",why:"Пять секунд после оплаты"},
+  {id:"rule48",time:"day",cat:"money",diff:"mid",name:"Без импульсивных покупок",why:"Захотел что-то кроме еды — ждёшь 48 часов"},
+  {id:"english",time:"day",cat:"mind",diff:"mid",name:"15 минут английского",why:"В обед или по дороге"},
+  {id:"noscroll",time:"day",cat:"mind",diff:"hard",name:"Час без соцсетей и ленты",why:"Вернуть внимание себе"},
+  {id:"noporn",time:"day",cat:"mind",diff:"hard",name:"День без порно",why:"Энергия остаётся на твои цели"},
+  {id:"squats",time:"evening",cat:"body",diff:"mid",name:"Приседания 50",why:"Ноги — самые большие мышцы, жгут больше всего"},
+  {id:"plank",time:"evening",cat:"body",diff:"mid",name:"Планка 2 минуты",why:"Пресс и спина. Можно 4 подхода по 30 секунд"},
+  {id:"nofood20",time:"evening",cat:"body",diff:"hard",name:"Не есть после 20:00",why:"Захотелось — вода или чай без сахара"},
+  {id:"money",time:"evening",cat:"money",diff:"mid",core:true,name:"Закрыть день по деньгам",why:"Сверь с банком: всё ли записано. Отмечается и во вкладке «Деньги»"},
+  {id:"tidy15",time:"evening",cat:"home",diff:"mid",name:"15 минут уборки",why:"Таймер на 15 минут, потом стоп"},
+  {id:"read",time:"evening",cat:"mind",diff:"mid",name:"Прочитать 20 страниц",why:"20 страниц в день — около 25 книг в год"},
+  {id:"prep",time:"evening",cat:"home",diff:"easy",name:"Подготовить завтрашний день",why:"Одежда, еда с собой, сумка"},
+  {id:"shower",time:"evening",cat:"body",diff:"easy",name:"Душ и зубы",why:"Смыть день"},
+  {id:"noscreen",time:"evening",cat:"mind",diff:"mid",name:"30 минут без экрана перед сном",why:"Засыпаешь быстрее и высыпаешься"},
+  {id:"sleep23",time:"evening",cat:"body",diff:"hard",name:"Отбой до 23:00",why:"Без 7 часов сна вес почти не уходит"}
 ];
 const CATS=[{id:"food",name:"Продукты"},{id:"cafe",name:"Кафе и доставка"},{id:"transport",name:"Транспорт"},{id:"shop",name:"Покупки"},{id:"fun",name:"Развлечения"},{id:"health",name:"Здоровье и витамины"},{id:"home",name:"Дом и связь"},{id:"bet",name:"Ставки"},{id:"other",name:"Другое"}];
 const INC_CATS=[{id:"bonus",name:"Премия"},{id:"trip",name:"Командировочные"},{id:"bet",name:"Выигрыш"},{id:"side",name:"Подработка"},{id:"misc",name:"Другое"}];
@@ -396,9 +419,12 @@ const incName=id=>(INC_CATS.find(c=>c.id===id)||{name:"Доход"}).name;
 
 /* ================= data ================= */
 const KEY="kvest.data.v1",DEV="kvest.device.v1";
-function blank(){return {app:"kvest-planer",v:1,habits:DEFAULT_HABITS.map(h=>({...h})),habitsAt:0,days:{},mclose:{},todos:{},boss:{},sprints:{},fin:{cfg:null,cfgAt:0,tx:{},periods:{},debts:{}},resetAt:0}}
-function normalize(s){const b=blank();const o={...b,...s};o.fin={...b.fin,...(s.fin||{})};for(const k of ["days","mclose","todos","boss","sprints"])if(!o[k]||typeof o[k]!=="object")o[k]={};for(const k of ["tx","periods","debts"])if(!o.fin[k]||typeof o.fin[k]!=="object")o.fin[k]={};if(!Array.isArray(o.habits))o.habits=b.habits;return o}
-let D=(()=>{const s=ls.get(KEY,null);return s&&s.app==="kvest-planer"?normalize(s):blank()})();
+const MAPS=["days","mclose","todos","boss","sprints","counts","weights"];
+function blank(){return {app:"kvest-planer",v:1,habits:DEFAULT_HABITS.map(h=>({...h})),habitsAt:0,habitsVer:HABITS_VER,days:{},mclose:{},todos:{},boss:{},sprints:{},counts:{},weights:{},profile:{weightGoal:0,at:0},fin:{cfg:null,cfgAt:0,tx:{},periods:{},debts:{}},resetAt:0}}
+function normalize(s){const b=blank();const o={...b,...s};o.fin={...b.fin,...(s.fin||{})};for(const k of MAPS)if(!o[k]||typeof o[k]!=="object")o[k]={};for(const k of ["tx","periods","debts"])if(!o.fin[k]||typeof o.fin[k]!=="object")o.fin[k]={};if(!Array.isArray(o.habits))o.habits=b.habits;if(!o.profile||typeof o.profile!=="object")o.profile=b.profile;if(!s.habitsVer)o.habitsVer=1;return o}
+/* older saves get the new habit list once; marks for habits with the same id are kept */
+function upgrade(o){if((o.habitsVer||1)<HABITS_VER){o.habits=DEFAULT_HABITS.map(h=>({...h}));o.habitsVer=HABITS_VER;o.habitsAt=Date.now()}return o}
+let D=(()=>{const s=ls.get(KEY,null);return s&&s.app==="kvest-planer"?upgrade(normalize(s)):blank()})();
 const dev=Object.assign({token:"",gistId:"",pass:"",lastSync:0,lastErr:"",sprint:null},ls.get(DEV,{}));
 const saveDev=()=>ls.set(DEV,dev);
 function save(){if(!ls.set(KEY,D))toast("Браузер не дал сохранить данные. Не открывай планер в режиме инкогнито");Sync.schedule()}
@@ -410,12 +436,13 @@ const newer=(a,b)=>(b&&(b.at||0)>((a&&a.at)||0))?b:a;
 function mergeMap(A,B){const o={...(A||{})};for(const [k,v] of Object.entries(B||{}))o[k]=newer(o[k],v)||v;return o}
 function merge(a,b){
   const o=normalize(JSON.parse(JSON.stringify(a)));b=normalize(b);
-  if((b.habitsAt||0)>(o.habitsAt||0)){o.habits=b.habits;o.habitsAt=b.habitsAt}
-  for(const k of ["days","mclose","todos","boss","sprints"])o[k]=mergeMap(o[k],b[k]);
+  if((b.habitsAt||0)>(o.habitsAt||0)){o.habits=b.habits;o.habitsAt=b.habitsAt;o.habitsVer=b.habitsVer}
+  for(const k of MAPS)o[k]=mergeMap(o[k],b[k]);
+  if((b.profile.at||0)>(o.profile.at||0))o.profile=b.profile;
   if((b.fin.cfgAt||0)>(o.fin.cfgAt||0)){o.fin.cfg=b.fin.cfg;o.fin.cfgAt=b.fin.cfgAt}
   for(const k of ["tx","periods","debts"])o.fin[k]=mergeMap(o.fin[k],b.fin[k]);
   const ra=Math.max(o.resetAt||0,b.resetAt||0);o.resetAt=ra;
-  if(ra)for(const k of ["days","mclose","boss","sprints"])for(const [d,r] of Object.entries(o[k]))if((r.at||0)<ra)delete o[k][d];
+  if(ra)for(const k of ["days","mclose","boss","sprints","counts"])for(const [d,r] of Object.entries(o[k]))if((r.at||0)<ra)delete o[k][d];
   return o;
 }
 function canon(x){if(Array.isArray(x))return "["+x.map(canon).join(",")+"]";if(x&&typeof x==="object")return "{"+Object.keys(x).sort().filter(k=>x[k]!==undefined).map(k=>JSON.stringify(k)+":"+canon(x[k])).join(",")+"}";return JSON.stringify(x===undefined?null:x)}
@@ -445,7 +472,8 @@ function billsIn(cfg,start,end){
       const d=new Date(y,m,Math.min(Number(b.day)||1,dim(y,m)));if(d>=start&&d<end)out.push({...b,amount:Number(b.amount),date:d})}});
   return out.sort((a,b)=>a.date-b.date);
 }
-function calcPeriod(cfg,txs,per,todayD,anchor,actual){
+/* sv: {skip} = no savings this period (money goes back to the daily limit); {fixed} = saved a custom amount */
+function calcPeriod(cfg,txs,per,todayD,anchor,actual,sv){
   const e=iso(per.end),from=anchor?fromIso(anchor.d):per.start,s=iso(from),t=todayD?iso(todayD):e;
   const inP=txs.filter(x=>x.d>=s&&x.d<e),incs=inP.filter(x=>x.kind==="inc"),exps=inP.filter(x=>x.kind!=="inc");
   const extra=sum(incs,x=>x.amt),betIn=sum(incs.filter(x=>x.cat==="bet"),x=>x.amt),betOut=sum(exps.filter(x=>x.cat==="bet"),x=>x.amt);
@@ -454,7 +482,9 @@ function calcPeriod(cfg,txs,per,todayD,anchor,actual){
   const baseKnown=!!anchor||actual!=null;
   const base=anchor?Number(anchor.amount)||0:(actual!=null?Number(actual)||0:per.pay.amount);
   const income=base+extra,pct=(Number(cfg.savePct)||0)/100,wpct=(cfg.extraPct==null?50:Number(cfg.extraPct)||0)/100;
-  const saveBase=anchor?0:Math.round(base*pct),saveExtra=Math.round(regularExtra*pct+windfallSaveBase*wpct),save=saveBase+saveExtra;
+  const saveBase=anchor?0:Math.round(base*pct),saveExtra=Math.round(regularExtra*pct+windfallSaveBase*wpct),savePlan=saveBase+saveExtra;
+  /* after a balance correction (anchor) the money already set aside is not on the card, so only new income is saved from */
+  const save=anchor?savePlan:(sv&&sv.skip?0:(sv&&sv.fixed!=null?Number(sv.fixed)||0:savePlan));
   const skip=(anchor&&anchor.skip)||[];
   const bills=billsIn(cfg,from,per.end).filter(b=>!skip.includes(b.id)),billsSum=sum(bills,b=>b.amount);
   const free=income-save-billsSum;
@@ -464,7 +494,7 @@ function calcPeriod(cfg,txs,per,todayD,anchor,actual){
   const tomorrow=todayD&&daysLeft>1?Math.max(0,availStart-spentToday)/(daysLeft-1):null;
   const byCat={},byDay={};exps.forEach(x=>{const c=x.cat||"other";byCat[c]=(byCat[c]||0)+Number(x.amt);byDay[x.d]=(byDay[x.d]||0)+Number(x.amt)});
   return {s,e,t,inP,incs,exps,extra,income,save,bills,billsSum,free,spentBefore,spentToday,spent,totalDays,daysLeft,availStart,dailyLimit,leftToday,periodLeft,tomorrow,byCat,byDay,
-    avgLimit:free/totalDays,anchored:!!anchor,base,baseKnown,windfall,regularExtra,saveBase,saveExtra,bet:{in:betIn,out:betOut}};
+    avgLimit:free/totalDays,anchored:!!anchor,base,baseKnown,windfall,regularExtra,saveBase,saveExtra,savePlan,bet:{in:betIn,out:betOut}};
 }
 const txList=()=>Object.values(D.fin.tx).filter(x=>!x.del);
 const liveDebts=()=>Object.values(D.fin.debts).filter(d=>!d.del);
@@ -486,12 +516,13 @@ function model(){
   const P=D.fin.periods,pdoc=P[per.key]||{},txs=txList();
   const anchorOk=a=>a&&a.d>=iso(per.start)&&a.d<iso(per.end)?a:null;
   const num=v=>(v==null||v===""?null:Number(v));
-  const cur=calcPeriod(cfg,txs,per,todayD,anchorOk(pdoc.anchor),num(pdoc.income));
+  const svOf=p=>({skip:!!p.saveSkip,fixed:p.saveFixed?(Number(p.saved)||0):null});
+  const cur=calcPeriod(cfg,txs,per,todayD,anchorOk(pdoc.anchor),num(pdoc.income),svOf(pdoc));
   let prevPer=periodAt(cfg,addD(per.start,-1));
   if(prevPer&&cfg.since&&iso(prevPer.end)<=cfg.since)prevPer=null;
   const prevDoc=prevPer?(P[prevPer.key]||{}):{};
   const prevAnchor=prevPer&&prevDoc.anchor&&prevDoc.anchor.d>=iso(prevPer.start)?prevDoc.anchor:null;
-  const prev=prevPer?calcPeriod(cfg,txs,prevPer,null,prevAnchor,num(prevDoc.income)):null;
+  const prev=prevPer?calcPeriod(cfg,txs,prevPer,null,prevAnchor,num(prevDoc.income),svOf(prevDoc)):null;
   const cushion=(Number(cfg.cushionStart)||0)+Object.values(P).reduce((s,p)=>s+(Number(p.saved)||0)+(Number(p.extra)||0),0);
   return {cfg,todayD,per,cur,prevPer,prev,pdoc,prevDoc,cushion};
 }
@@ -501,8 +532,12 @@ function patchPeriod(key,patch){D.fin.periods[key]={saved:0,extra:0,paid:{},...(
 function dayDone(date){
   const r=D.days[date],set=new Set(r?r.done:[]);
   const m=D.mclose[date];if(m&&!m.del)set.add("money");else set.delete("money");
+  const w=D.weights[date];if(w&&!w.del&&w.kg>0)set.add("weigh");else set.delete("weigh");
+  const c=D.counts[date]||{};
+  for(const h of D.habits)if(h.type==="counter"){if((c[h.id]||0)>=(Number(h.target)||1))set.add(h.id);else set.delete(h.id)}
   return set;
 }
+function weightPts(){return Object.entries(D.weights).filter(([d,w])=>!w.del&&w.kg>0).sort((a,b)=>a[0]<b[0]?-1:1).map(([d,w])=>({d,kg:Number(w.kg)}))}
 function dayInfo(date){
   const set=dayDone(date),hs=D.habits,done=hs.filter(h=>set.has(h.id)),core=hs.filter(h=>h.core);
   const coreDone=core.filter(h=>set.has(h.id)).length;
@@ -524,7 +559,7 @@ function summary(){
   const ok=d=>d&&d<=t&&!(rd&&d<rd);
   const xpd={},add=(d,v)=>{if(!ok(d)||!v)return;xpd[d]=(xpd[d]||0)+v};
   const info={};let perfectDays=0;
-  for(const d of new Set([...Object.keys(D.days),...Object.keys(D.mclose)])){if(!ok(d))continue;const i=dayInfo(d);if(i.count>0){info[d]=i;add(d,i.habitXp);if(i.perfect)perfectDays++}}
+  for(const d of new Set([...Object.keys(D.days),...Object.keys(D.mclose),...Object.keys(D.counts),...Object.keys(D.weights)])){if(!ok(d))continue;const i=dayInfo(d);if(i.count>0){info[d]=i;add(d,i.habitXp);if(i.perfect)perfectDays++}}
   let bosses=0,todosDone=0;
   for(const x of Object.values(D.todos)){if(x.del||!x.doneDate||(x.doneAt||0)<(D.resetAt||0))continue;const isB=bossOf(x.doneDate)===x.id;if(ok(x.doneDate)){isB?bosses++:todosDone++}add(x.doneDate,isB?BONUS.boss:(XP[x.diff]||10))}
   let sprints=0;for(const [d,r] of Object.entries(D.sprints)){const n=Math.min(r.n||0,SPRINT_MAX_DAY);if(ok(d)){sprints+=n;add(d,n*BONUS.sprint)}}
@@ -537,6 +572,8 @@ function summary(){
   }
   const dpd={};for(const x of txList())if(x.cat==="debt"){dpd[x.d]=(dpd[x.d]||0)+1;if(dpd[x.d]<=3)add(x.d,BONUS.debtPay)}
   const debtsKilled=liveDebts().filter(d=>Number(d.left)>0&&debtLeft(d)<=0).length;
+  let pushTotal=0,pushDays=0;for(const [d,c] of Object.entries(D.counts)){if(!ok(d))continue;const n=Number(c.pushups)||0;pushTotal+=n;if(n>=100)pushDays++}
+  const wp=weightPts(),lost=wp.length?Math.max(0,Math.floor(wp[0].kg-wp[wp.length-1].kg)):0;
   const first=Object.keys(info).sort()[0];
   /* streak: shields absorb missed days; once they run out the streak breaks, but a repair quest
      (minimum + REPAIR_EXTRA more habits, within REPAIR_WINDOW days of the break) brings it back whole */
@@ -563,7 +600,7 @@ function summary(){
   if(pending)repair={was:pending.was,need:pending.need,deadline:t,started:true};
   else if(streak===0&&lastBreak>0&&diffD(breakDay,t)<=REPAIR_WINDOW)repair={was:lastBreak,need:REPAIR_EXTRA,deadline:addDays(breakDay,REPAIR_WINDOW)};
   const xp=Object.values(xpd).reduce((a,b)=>a+b,0);
-  return {xp,xpd,info,streak,best,shields,lastBreak,frozen,comeback,repaired,repair,bonusBy,perfectDays,bosses,todosDone,sprints,closes,unders,saves,debtsKilled,comebacks,first};
+  return {xp,xpd,info,streak,best,shields,lastBreak,frozen,comeback,repaired,repair,bonusBy,perfectDays,bosses,todosDone,sprints,closes,unders,saves,debtsKilled,comebacks,first,pushTotal,pushDays,lost};
 }
 function achList(s){const L=levelOf(s.xp);return [
   ["1","Первый шаг","Отметить первую привычку",Object.keys(s.info).length?1:0,1],
@@ -571,17 +608,19 @@ function achList(s){const L=levelOf(s.xp);return [
   ["7","Неделя в строю","Серия 7 дней, первый щит",s.best,7],
   ["21","Привычка","Серия 21 день",s.best,21],
   ["30","Железная воля","Серия 30 дней",s.best,30],
-  ["Б","Охотник","Победить первого босса",s.bosses,1],
-  ["Б10","Гроза боссов","Победить 10 боссов",s.bosses,10],
+  ["100","Сотка","100 отжиманий за день",s.pushDays,1],
+  ["30×","Месяц сотен","30 дней по 100 отжиманий",s.pushDays,30],
+  ["5К","Пять тысяч","5000 отжиманий всего",s.pushTotal,5000],
+  ["−5","Минус 5 кг","Сбросить 5 кг от первого взвешивания",s.lost,5],
+  ["−10","Минус 10 кг","Сбросить 10 кг",s.lost,10],
   ["S","Идеальный день","Закрыть все привычки за день",s.perfectDays,1],
-  ["Ф","В потоке","10 фокус-спринтов",s.sprints,10],
   ["₽","Бухгалтер","Закрыть 7 дней по деньгам",s.closes,7],
   ["Л","В рамках","10 дней в дневном лимите",s.unders,10],
   ["П","Подушка","Отложить в подушку 3 раза",s.saves,3],
   ["Д","Долг повержен","Полностью закрыть долг",s.debtsKilled,1],
   ["R","Возвращение","Вернуться в строй после срыва",s.comebacks,1],
   ["5","Подмастерье","Достичь 5 уровня",L,5],
-  ["XP","Пять тысяч","Набрать 5000 XP",s.xp,5000]
+  ["XP","Опытный","Набрать 5000 XP",s.xp,5000]
 ].map(([ic,n,d,v,g])=>({ic,n,d,v,g,ok:v>=g}))}
 
 /* ================= actions ================= */
@@ -605,12 +644,23 @@ function act(fn){
 }
 function toggleHabit(id){
   const date=U.view,h=D.habits.find(x=>x.id===id);if(!h)return;
+  if(h.type==="counter"){addCount(id,Number(h.step)||25);return}
+  if(id==="weigh"){U.weighOpen=!U.weighOpen;render();const k=$("kgIn");if(k)k.focus();return}
   act(()=>{
     if(id==="money")return toggleClose(date)?h.name:null;
     const r=D.days[date],set=new Set(r?r.done:[]),was=set.has(id);
     was?set.delete(id):set.add(id);D.days[date]={done:[...set],at:Date.now()};
     return was?null:h.name;
   });
+}
+function addCount(id,delta){
+  const h=D.habits.find(x=>x.id===id);if(!h)return;const date=U.view;
+  act(()=>{const c={...(D.counts[date]||{})},n=Math.max(0,(Number(c[id])||0)+delta);c[id]=n;c.at=Date.now();D.counts[date]=c;return delta>0?h.name+": "+n+" / "+h.target:null});
+}
+/* opening the Money tab ticks the "look at today's limit" habit */
+function autoBudgetLook(){
+  const t=today();if(!D.fin.cfg||!D.habits.some(h=>h.id==="budget")||dayDone(t).has("budget"))return;
+  const r=D.days[t],set=new Set(r?r.done:[]);set.add("budget");D.days[t]={done:[...set],at:Date.now()};
 }
 function toggleClose(date){
   const m=D.mclose[date],was=!!(m&&!m.del);let under=false;
@@ -650,7 +700,9 @@ function render(){
   U.lastTab=U.tab;
   document.querySelectorAll("nav.tabs [data-v]").forEach(b=>b.setAttribute("aria-selected",b.dataset.v===U.tab));
 }
-function setTab(t){U.tab=t;ls.set("kvest.tab",t);U.confirm=null;if(t==="today")U.view=today();render();window.scrollTo(0,0)}
+function setTab(t){U.tab=t;ls.set("kvest.tab",t);U.confirm=null;if(t==="today")U.view=today();
+  if(t==="money"&&D.fin.cfg&&!dayDone(today()).has("budget")&&D.habits.some(h=>h.id==="budget"))act(()=>{autoBudgetLook();return "Лимит на сегодня проверен"});else render();
+  window.scrollTo(0,0)}
 
 /* ---------- Today ---------- */
 function heroHtml(s){
@@ -677,7 +729,7 @@ function minHtml(i){
   if(!i.core.length)return '<section class="panel mincard"><div class="eyebrow">Минимум дня</div><p class="note">Отметь звёздочкой 2–4 ключевые привычки в «Настройках». Тогда для серии хватит их, даже в плохой день.</p></section>';
   const need=i.core.length-i.coreDone;
   return '<section class="panel mincard'+(i.counted?" ok":"")+'"><div class="row"><div><div class="eyebrow">Минимум дня</div><div class="h">'+(i.counted?"Зачёт! День в серии":"Осталось "+need+" из "+i.core.length)+'</div></div><div class="minprog">'+i.coreDone+'/'+i.core.length+'</div></div>'
-   +'<div class="minlist">'+i.core.map(h=>'<button class="minchip'+(i.set.has(h.id)?" done":"")+'" data-a="habit" data-id="'+esc(h.id)+'" aria-pressed="'+i.set.has(h.id)+'"><span class="dot">'+(i.set.has(h.id)?'<svg width="12" height="12" viewBox="0 0 14 14"><path d="M3 7.5 6 10.5 11.5 4" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>':"")+'</span>'+esc(h.name)+'</button>').join("")+'</div>'
+   +'<div class="minlist">'+i.core.map(h=>'<button class="minchip'+(i.set.has(h.id)?" done":"")+'" data-a="habit" data-id="'+esc(h.id)+'" aria-pressed="'+i.set.has(h.id)+'"><span class="dot">'+(i.set.has(h.id)?'<svg width="12" height="12" viewBox="0 0 14 14"><path d="M3 7.5 6 10.5 11.5 4" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>':"")+'</span>'+esc(h.name)+(h.type==="counter"?' <span class="num">'+((D.counts[U.view]||{})[h.id]||0)+'/'+h.target+'</span>':"")+'</button>').join("")+'</div>'
    +'<p class="note">'+(i.counted?"Всё остальное сегодня — бонусный опыт.":"Плохой день? Сделай только это, и серия не сгорит.")+'</p></section>';
 }
 function bossHtml(){
@@ -705,8 +757,9 @@ function habitsHtml(v,i,isT){
     const ct=D.habits.filter(x=>(x.time||"day")===g.id);if(!ct.length)continue;
     const dn=ct.filter(x=>i.set.has(x.id)).length,full=dn===ct.length,open=U.open[g.id]!=null?U.open[g.id]:!full;
     h+='<div class="group'+(full?" full":"")+'"><button class="ghead" data-a="group" data-id="'+g.id+'" aria-expanded="'+open+'"><span class="gname"><svg class="chev" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="m3 4.5 3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>'+g.name+'<span class="ghint">'+g.hint+'</span></span><span class="gcount">'+(full?"Готово · ":"")+dn+" / "+ct.length+'</span></button>';
-    if(open)for(const x of ct){const d=i.set.has(x.id);
-      h+='<button class="task '+esc(x.cat)+(d?" done":"")+'" data-a="habit" data-id="'+esc(x.id)+'" aria-pressed="'+d+'"><span class="box">'+CHECK+'</span><span style="min-width:0"><div class="tname">'+esc(x.name)+'</div>'+(x.why?'<div class="twhy">'+esc(x.why)+'</div>':"")+'</span><span class="tmeta">'+(x.core?'<span class="star">минимум</span>':"")+'<span class="xp">+'+(XP[x.diff]||10)+'</span></span></button>'}
+    if(open)for(const x of ct){const d=i.set.has(x.id),w=x.id==="weigh"?D.weights[v]:null;
+      h+='<button class="task '+esc(x.cat)+(d?" done":"")+'" data-a="habit" data-id="'+esc(x.id)+'" aria-pressed="'+d+'"><span class="box">'+CHECK+'</span><span style="min-width:0"><div class="tname">'+esc(x.name)+'</div>'+(x.why?'<div class="twhy">'+esc(x.why)+'</div>':"")+'</span><span class="tmeta">'+(x.core?'<span class="star">минимум</span>':"")+(d&&w?'<span class="xp">'+String(w.kg).replace(".",",")+' кг</span>':'<span class="xp">+'+(XP[x.diff]||10)+'</span>')+'</span></button>';
+      if(x.id==="weigh"&&U.weighOpen)h+='<form class="inline" data-f="weigh" autocomplete="off"><div class="amount sm" style="flex:1"><input id="kgIn" inputmode="decimal" placeholder="'+(w&&!w.del?String(w.kg).replace(".",","):"например 92,4")+'" aria-label="Вес, кг"><span>кг</span></div><button class="primary">Записать</button>'+(w&&!w.del?'<button type="button" class="ghost danger" data-a="weighdel">Убрать</button>':"")+'</form>'}
     h+="</div>";
   }
   return h+"</section>";
@@ -733,6 +786,15 @@ function sprintHtml(){
         :'<div class="h">'+SPRINT_MIN+' минут на одно дело</div><div class="note">Когда не можешь заставить себя начать. Сегодня: '+n+', каждый +'+BONUS.sprint+' XP.</div>')
    +'</div>'+(run?'<button class="ghost" data-a="sprintstop">Прервать</button>':'<button class="primary" data-a="sprint">Старт</button>')+'</div></section>';
 }
+function countersHtml(date){
+  const c=D.counts[date]||{};
+  return D.habits.filter(h=>h.type==="counter").map(h=>{
+    const n=Number(c[h.id])||0,tg=Number(h.target)||100,st=Number(h.step)||25,p=Math.min(100,n/tg*100),done=n>=tg;
+    return '<section class="panel counter'+(done?" ok":"")+'"><div class="row"><div><div class="eyebrow">'+esc(h.name)+(h.core?" · минимум":"")+'</div><div class="cnum"><b>'+n+'</b> / '+tg+'</div></div><div class="note" style="text-align:right;max-width:55%">'+(done?"Сделано. Красавчик":esc(h.why||""))+'</div></div>'
+     +'<div class="meter"><i style="width:'+p+'%"></i></div>'
+     +'<div class="cbtns"><button class="ghost" data-a="count" data-id="'+esc(h.id)+'" data-v="-10" aria-label="Минус 10">−10</button><button class="primary" data-a="count" data-id="'+esc(h.id)+'" data-v="10">+10</button><button class="primary gold" data-a="count" data-id="'+esc(h.id)+'" data-v="'+st+'">+'+st+'</button></div></section>';
+  }).join("");
+}
 function moneyMiniHtml(){
   if(!D.fin.cfg)return '<section class="panel"><div class="row"><div><div class="eyebrow">Деньги</div><div class="h">Бюджет не настроен</div><div class="note">2 минуты: даты выплат и обязательные платежи.</div></div><button class="primary" data-a="tab" data-v="money">Настроить</button></div></section>';
   const m=model();if(!m)return "";
@@ -749,10 +811,8 @@ function todayHtml(s){
   const t=today(),v=U.view,isT=v===t,i=dayInfo(v);
   let h=heroHtml(s);
   if(isT)h+=bannerHtml(s,i);
-  h+=minHtml(i);
-  if(isT)h+=bossHtml();
-  h+=habitsHtml(v,i,isT);
-  if(isT)h+=todosHtml()+sprintHtml()+moneyMiniHtml();
+  h+=minHtml(i)+countersHtml(v)+habitsHtml(v,i,isT);
+  if(isT)h+=moneyMiniHtml();
   return h;
 }
 
@@ -790,14 +850,18 @@ function moneyTodayHtml(m){
      +(foot?'<div class="sub"><span>'+foot+'</span></div>':"")
      +(!cur.baseKnown?'<div class="sub small"><span>Считаю по обычной сумме '+rub(per.pay.amount)+'. Впиши фактическую ниже.</span></div>':"")+'</section>';
   }
+  h+=U.fixOpen?'<form class="card" data-f="recalc" autocomplete="off" novalidate><h2>Сколько у тебя сейчас на карте и наличными?</h2><p class="small muted">Без подушки. Лимит пересчитается с сегодняшнего дня от этой суммы, без нравоучений.</p><div class="inline"><div class="amount sm" style="flex:1"><input id="real" inputmode="decimal" placeholder="0" aria-label="Сколько денег сейчас"><span>₽</span></div><button class="btn sm">Пересчитать</button><button type="button" class="x" data-a="fixopen" aria-label="Закрыть">×</button></div></form>'
+    :'<button class="linkbtn" data-a="fixopen" style="align-self:flex-start">Цифры не сходятся с картой? Поправить остаток</button>';
   h+='<div class="facts"><div class="fact"><div class="k">До: '+esc(per.next.label.toLowerCase())+'</div><div class="v">'+daysW(cur.daysLeft)+'</div></div><div class="fact"><div class="k">Осталось на период</div><div class="v" style="'+(cur.periodLeft<0?"color:var(--bad)":"")+'">'+rub(cur.periodLeft)+'</div></div><div class="fact"><div class="k">Подушка</div><div class="v">'+rub(m.cushion)+'</div></div></div>';
   // nudges: pay amount, savings, bills due soon, last period's leftover
   const n=[];
   if(!cur.baseKnown)n.push('<form class="nudge" data-f="payin" autocomplete="off" novalidate><div class="txt"><b>'+esc(per.pay.label)+" "+dm(per.start)+': сколько пришло на руки?</b><span class="small muted">С премией, если она пришла вместе с выплатой.</span></div><div class="amount sm" style="flex:1 1 150px"><input id="payamt" inputmode="decimal" placeholder="'+(per.pay.amount?NF.format(per.pay.amount):"0")+'" aria-label="Сумма выплаты"><span>₽</span></div><button class="btn sm">Записать</button></form>');
   const savedSoFar=Number(pdoc.saved)||0,toSave=cur.save-savedSoFar;
-  if((cur.baseKnown||per.pay.amount)&&toSave>0){
+  if((cur.baseKnown||per.pay.amount)&&toSave>0&&!pdoc.saveSkip&&!pdoc.saveFixed){
     const why=[];if(cur.saveBase)why.push(m.cfg.savePct+"% с выплаты");if(cur.saveExtra)why.push(rub(cur.saveExtra)+" с доп. доходов");
-    n.push('<div class="nudge"><div class="txt"><b>'+(savedSoFar?"Отложи ещё ":"Сначала отложи ")+rub(toSave)+'</b><span class="small muted">'+why.join(" + ")+' — в подушку сразу, до любых трат. +'+BONUS.save+' XP</span></div><button class="btn sm" data-a="save" data-v="'+cur.save+'">Отложил</button></div>');
+    n.push('<div class="nudge"><div class="txt"><b>'+(savedSoFar?"Отложи ещё ":"Подушка: отложи ")+rub(toSave)+'</b><span class="small muted">'+why.join(" + ")+'. Пока не отложил, эта сумма уже вычтена из лимита. Денег впритык — жми «Не сейчас», и она вернётся в дневной лимит.</span></div>'
+     +(U.saveCustom?'<form class="inline" data-f="savecustom" autocomplete="off" style="flex:1 1 100%"><div class="amount sm" style="flex:1"><input id="saveAmt" inputmode="decimal" placeholder="Сколько отложил" aria-label="Сколько отложил"><span>₽</span></div><button class="btn sm">Готово</button><button type="button" class="x" data-a="savecustom" aria-label="Отмена">×</button></form>'
+       :'<div class="chips"><button class="btn sm" data-a="save" data-v="'+cur.save+'">Отложил '+rub(toSave)+'</button><button class="btn sm ghost" data-a="savecustom">Другую сумму</button><button class="btn sm ghost" data-a="saveskip">Не сейчас</button></div>')+'</div>');
   }
   cur.bills.filter(b=>!(pdoc.paid||{})[b.id]&&diffDays(m.todayD,b.date)<=3).forEach(b=>{
     const dd=diffDays(m.todayD,b.date),when=dd<0?"просрочено":dd===0?"сегодня":dd===1?"завтра":dm(b.date);
@@ -861,7 +925,7 @@ function periodHtml(m){
    +'<div class="row"><span>'+(cur.anchored?"Было на руках "+dm(fromIso(cur.s)):esc(per.pay.label)+(cur.baseKnown?"":' <span class="small muted">(обычно)</span>'))+'</span><span>'+rub(cur.base)+'</span></div>'
    +(cur.regularExtra?'<div class="row"><span>Доп. доходы</span><span>+'+rub(cur.regularExtra)+'</span></div>':"")
    +(cur.windfall?'<div class="row"><span>Премии и выигрыши</span><span>+'+rub(cur.windfall)+'</span></div>':"")
-   +'<div class="row minus"><span>Подушка</span><span>'+(cur.save?"−"+rub(cur.save):(cur.anchored?"со следующей выплаты":"0 ₽"))+'</span></div>'
+   +'<div class="row minus"><span>Подушка</span><span>'+(pdoc.saveSkip?"пропущено":cur.save?"−"+rub(cur.save):(cur.anchored?"со следующей выплаты":"0 ₽"))+'</span></div>'
    +'<div class="row minus"><span>Обязательные платежи</span><span>'+(cur.billsSum?"−":"")+rub(cur.billsSum)+'</span></div>'
    +'<div class="row total"><span>На жизнь</span><span>'+rub(cur.free)+'</span></div>'
    +'<div class="row minus"><span>Уже потрачено</span><span>−'+rub(cur.spent)+'</span></div>'
@@ -879,7 +943,7 @@ function periodHtml(m){
   const monthlySave=Math.max(cur.save,(cfg.pays||[]).reduce((s,p)=>s+(Number(p.amount)||0),0)*(Number(cfg.savePct)||0)/100);
   out.push('<section class="card"><div class="row"><h2>Финансовая подушка</h2>'+(goal?'<span class="small muted">цель '+rub(goal)+'</span>':"")+'</div><div class="big" style="font-size:32px">'+rub(m.cushion)+'</div>'
    +(goal?'<div class="meter"><i style="width:'+gp+'%"></i></div><p class="small muted">'+Math.round(gp)+'% от цели'+(m.cushion<goal&&monthlySave>0?" · в таком темпе ещё ≈ "+Math.ceil((goal-m.cushion)/monthlySave)+" мес.":"")+'</p>':'<p class="small muted">Задай цель в настройках: обычно это 3–6 месяцев обязательных расходов.</p>')
-   +'<div class="row"><span class="small">'+(pdoc.saved?"В этом периоде отложено "+rub(pdoc.saved):"В этом периоде ещё не отложено")+'</span>'+(pdoc.saved?'<button class="linkbtn" data-a="unsave">Отменить</button>':(cur.save>0?'<button class="btn sm" data-a="save" data-v="'+cur.save+'">Отложил '+rub(cur.save)+'</button>':""))+'</div></section>');
+   +'<div class="row"><span class="small">'+(pdoc.saveSkip?"В этом периоде пропускаешь — деньги в дневном лимите":pdoc.saved?"В этом периоде отложено "+rub(pdoc.saved):"В этом периоде ещё не отложено")+'</span>'+(pdoc.saved||pdoc.saveSkip||pdoc.saveFixed?'<button class="linkbtn" data-a="unsave">'+(pdoc.saveSkip?"Всё-таки отложить":"Отменить")+'</button>':(cur.save>0?'<button class="btn sm" data-a="save" data-v="'+cur.save+'">Отложил '+rub(cur.save)+'</button>':""))+'</div></section>');
   if(m.prev){const p=m.prev;out.push('<section class="card"><h2>Прошлый период</h2><p>'+dm(m.prevPer.start)+" – "+dm(addD(m.prevPer.end,-1))+": на жизнь было "+rub(p.free)+", потрачено "+rub(p.spent)+". "+(p.periodLeft>=0?'<b style="color:var(--good)">Осталось '+rub(p.periodLeft)+'.</b>':'<b style="color:var(--bad)">Перерасход '+rub(-p.periodLeft)+'.</b>')+'</p>'+(m.prevDoc.extra?'<p class="small muted">Остаток '+rub(m.prevDoc.extra)+' переложен в подушку.</p>':"")+'</section>')}
   const txs=cur.inP.slice().sort((a,b)=>a.d<b.d?1:a.d>b.d?-1:(b.ts||0)-(a.ts||0));let last="",rows="";
   txs.forEach(x=>{if(x.d!==last){last=x.d;const d=fromIso(x.d);rows+='<div class="dayrow">'+dm(d)+", "+WD[d.getDay()]+" · "+rub(cur.byDay[x.d]||0)+'</div>'}rows+=txRow(x)});
@@ -895,8 +959,24 @@ function heat(i,frozen){
   if(i.counted)return "color-mix(in srgb,var(--good) "+(65+Math.round(i.pct/100*30))+"%,var(--heat0))";
   return "color-mix(in srgb,var(--warn) "+(25+Math.round(i.pct/100*35))+"%,var(--heat0))";
 }
+function weightHtml(){
+  const pts=weightPts(),goal=Number(D.profile.weightGoal)||0,f=x=>String(Math.round(x*10)/10).replace(".",",");
+  if(!pts.length)return '<section class="panel"><h2>Вес</h2><p class="note">Взвешивайся утром натощак (привычка в утреннем блоке), и здесь появится график.'+(goal?" Цель: "+f(goal)+" кг.":" Цель задай в «Настройках».")+'</p></section>';
+  const first=pts[0].kg,last=pts[pts.length-1].kg,ch=last-first,rec=pts.slice(-60);
+  const vals=rec.map(p=>p.kg).concat(goal?[goal]:[]),lo=Math.floor(Math.min(...vals)-1),hi=Math.ceil(Math.max(...vals)+1);
+  const W=600,H=180,pl=34,pr=8,pt=12,pb=22,x=k=>pl+(rec.length<2?(W-pl-pr)/2:k*(W-pl-pr)/(rec.length-1)),y=v=>pt+(H-pt-pb)*(hi-v)/(hi-lo||1);
+  let svg='<svg class="wchart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="График веса">';
+  [hi,(hi+lo)/2,lo].forEach(v=>{svg+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="var(--line)"/><text x="'+(pl-6)+'" y="'+(y(v)+4)+'" text-anchor="end">'+Math.round(v)+'</text>'});
+  if(goal)svg+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y(goal)+'" y2="'+y(goal)+'" stroke="var(--good)" stroke-dasharray="5 5" stroke-width="1.5"/><text x="'+(W-pr)+'" y="'+(y(goal)-5)+'" text-anchor="end" style="fill:var(--good)">цель '+f(goal)+'</text>';
+  svg+='<polyline fill="none" stroke="var(--gold)" stroke-width="2.5" stroke-linejoin="round" points="'+rec.map((p,k)=>x(k).toFixed(1)+","+y(p.kg).toFixed(1)).join(" ")+'"/>';
+  rec.forEach((p,k)=>{svg+='<circle cx="'+x(k).toFixed(1)+'" cy="'+y(p.kg).toFixed(1)+'" r="'+(k===rec.length-1?4.5:2.5)+'" fill="var(--gold)"><title>'+dm(parse(p.d))+": "+f(p.kg)+' кг</title></circle>'});
+  svg+='<text x="'+pl+'" y="'+(H-5)+'">'+dm(parse(rec[0].d))+'</text><text x="'+(W-pr)+'" y="'+(H-5)+'" text-anchor="end">'+dm(parse(rec[rec.length-1].d))+'</text></svg>';
+  return '<section class="panel"><div class="row"><h2>Вес</h2><span class="note">'+(goal?(last>goal?"до цели "+f(last-goal)+" кг":"цель достигнута!"):"цель не задана")+'</span></div>'
+   +'<div class="records"><div class="rec"><div class="v">'+f(last)+'</div><div class="k">кг сейчас</div></div><div class="rec"><div class="v" style="color:'+(ch<=0?"var(--good)":"var(--bad)")+'">'+(ch>0?"+":ch<0?"−":"")+f(Math.abs(ch))+'</div><div class="k">кг с первого взвешивания</div></div></div>'
+   +svg+'<p class="note">Вес скачет на 0,5–1 кг день ото дня из-за воды. Смотри на линию за неделю, а не на одну цифру.</p></section>';
+}
 function statsHtml(s){
-  const t=today();let h='<h1>Прогресс</h1>'+heroHtml(s);
+  const t=today();let h='<h1>Прогресс</h1>'+heroHtml(s)+weightHtml();
   // week
   const W=330,H=150,top=16,bot=28,ch=H-top-bot,bw=28,PW=W-10,gap=(PW-7*bw)/8;
   let svg='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Выполнение привычек за 7 дней">';
@@ -918,7 +998,7 @@ function statsHtml(s){
   const passed=last30.filter(d=>s.info[d]&&s.info[d].counted).length;
   h+='<section class="panel"><div class="row"><h2>Карта дисциплины</h2><span class="note">6 недель</span></div><div class="cal">'+cal+'</div>'
    +'<div class="legend"><i style="background:var(--heat0)"></i>пусто<i style="background:'+heat({count:1,pct:40})+'"></i>частично<i style="background:'+heat({count:1,pct:70,counted:true})+'"></i>минимум<i style="background:var(--gold)"></i>идеально<i style="background:var(--shield)"></i>щит</div>'
-   +'<div class="records"><div class="rec"><div class="v">'+passed+" / "+last30.length+'</div><div class="k">зачётных дней за 30</div></div><div class="rec"><div class="v">'+s.best+'</div><div class="k">лучшая серия</div></div><div class="rec"><div class="v">'+s.bosses+'</div><div class="k">боссов повержено</div></div><div class="rec"><div class="v">'+s.unders+" / "+s.closes+'</div><div class="k">дней в лимите / закрыто</div></div></div></section>';
+   +'<div class="records"><div class="rec"><div class="v">'+passed+" / "+last30.length+'</div><div class="k">зачётных дней за 30</div></div><div class="rec"><div class="v">'+s.best+'</div><div class="k">лучшая серия</div></div><div class="rec"><div class="v">'+s.pushTotal.toLocaleString("ru-RU")+'</div><div class="k">отжиманий всего</div></div><div class="rec"><div class="v">'+s.unders+" / "+s.closes+'</div><div class="k">дней в лимите / закрыто</div></div></div></section>';
   // weak spots
   if(last30.length){
     const rows=D.habits.map(x=>{const c=last30.filter(d=>dayDone(d).has(x.id)).length;return {x,p:Math.round(c/last30.length*100)}}).sort((a,b)=>a.p-b.p);
@@ -926,7 +1006,7 @@ function statsHtml(s){
   }
   const al=achList(s);
   h+='<section class="panel"><div class="row"><h2>Достижения</h2><span class="note">открыто '+al.filter(a=>a.ok).length+' из '+al.length+'</span></div><div class="ach">'+al.map(a=>'<div class="badge'+(a.ok?" got":"")+'"><span class="ic">'+a.ic+'</span><span><div class="bn">'+esc(a.n)+'</div><div class="bd">'+esc(a.d)+'</div>'+(a.ok?"":'<div class="prog">'+Math.min(a.v,a.g).toLocaleString("ru-RU")+" / "+a.g.toLocaleString("ru-RU")+'</div>')+'</span></div>').join("")+'</div></section>';
-  h+='<section class="panel"><h2>Правила игры</h2><ol class="steps"><li><b>Минимум дня</b> (привычки со звёздочкой) = зачёт и +1 к серии. Остальное — бонусный опыт.</li><li><b>Щит</b> выдаётся за каждые '+SHIELD_EVERY+' зачётных дней подряд (максимум '+SHIELD_MAX+'). Пропустил день — щит сгорает вместо серии.</li><li><b>Серию можно вернуть.</b> Если щитов не осталось и серия прервалась, у тебя '+REPAIR_WINDOW+' дня на квест восстановления: минимум + ещё '+REPAIR_EXTRA+' любые привычки. Серия вернётся целиком, плюс +'+BONUS.comeback+' XP.</li><li><b>Босс дня</b> +'+BONUS.boss+' XP, закрыл блок (утро/день/вечер) целиком +'+BONUS.block+', идеальный день +'+BONUS.perfect+', бонус серии +5 XP за каждый день (до +50).</li><li><b>Деньги:</b> закрыл день в лимите +'+BONUS.closeUnder+', отложил в подушку +'+BONUS.save+', оплатил счёт +'+BONUS.billPaid+', платёж по долгу +'+BONUS.debtPay+'.</li></ol></section>';
+  h+='<section class="panel"><h2>Правила игры</h2><ol class="steps"><li><b>Минимум дня</b> (привычки со звёздочкой) = зачёт и +1 к серии. Остальное — бонусный опыт.</li><li><b>Щит</b> выдаётся за каждые '+SHIELD_EVERY+' зачётных дней подряд (максимум '+SHIELD_MAX+'). Пропустил день — щит сгорает вместо серии.</li><li><b>Серию можно вернуть.</b> Если щитов не осталось и серия прервалась, у тебя '+REPAIR_WINDOW+' дня на квест восстановления: минимум + ещё '+REPAIR_EXTRA+' любые привычки. Серия вернётся целиком, плюс +'+BONUS.comeback+' XP.</li><li>Закрыл блок (утро/день/вечер) целиком +'+BONUS.block+', идеальный день +'+BONUS.perfect+', бонус серии +5 XP за каждый день (до +50).</li><li><b>Деньги:</b> закрыл день в лимите +'+BONUS.closeUnder+', отложил в подушку +'+BONUS.save+', оплатил счёт +'+BONUS.billPaid+', платёж по долгу +'+BONUS.debtPay+'.</li></ol></section>';
   return h;
 }
 
@@ -937,7 +1017,8 @@ function habitsEditor(){
   return '<section class="card"><div class="row"><h2>Привычки</h2><span class="small muted">'+U.hd.filter(h=>h.core).length+' в минимуме</span></div>'
    +'<p class="small muted">Звёздочка «в минимум» = без этого день не засчитан. Держи 2–4 лёгких пункта, иначе в плохой день серия будет рваться.</p>'
    +U.hd.map((h,i)=>'<div class="hedit '+esc(h.cat)+'"><input class="text" data-hi="'+i+'" data-f="name" value="'+esc(h.name)+'" placeholder="Название" aria-label="Название привычки"><input class="text" data-hi="'+i+'" data-f="why" value="'+esc(h.why||"")+'" placeholder="Зачем это мне" aria-label="Зачем">'
-     +'<div class="r">'+sel(i,"time",TIMES.map(t=>[t.id,t.name]),h.time||"day")+sel(i,"cat",SPHERES.map(c=>[c.id,c.name]),h.cat)+sel(i,"diff",Object.keys(XP).map(k=>[k,DIFF_NAME[k]+" · "+XP[k]]),h.diff)+'</div>'
+     +(h.type==="counter"?'<div class="field"><label>Цель на день (счётчик)</label><input class="text" data-hi="'+i+'" data-f="target" inputmode="numeric" value="'+esc(h.target||"")+'"></div>':"")
+     +'<div class="r">'+sel(i,"time",TIMES.map(t=>[t.id,t.name]).concat([["any","Весь день"]]),h.time||"day")+sel(i,"cat",SPHERES.map(c=>[c.id,c.name]),h.cat)+sel(i,"diff",Object.keys(XP).map(k=>[k,DIFF_NAME[k]+" · "+XP[k]]),h.diff)+'</div>'
      +'<div class="r2"><label class="core"><input type="checkbox" data-hi="'+i+'" data-f="core"'+(h.core?" checked":"")+'>в минимум дня</label><span class="btnrow"><button type="button" class="iconbtn sm" data-a="h-up" data-i="'+i+'" aria-label="Выше">↑</button><button type="button" class="iconbtn sm" data-a="h-down" data-i="'+i+'" aria-label="Ниже">↓</button><button type="button" class="iconbtn sm danger" data-a="h-del" data-i="'+i+'" aria-label="Удалить">×</button></span></div></div>').join("")
    +'<div class="btnrow" style="justify-content:space-between"><button class="ghost" data-a="h-add">+ Привычка</button><span class="btnrow"><button class="ghost" data-a="h-cancel">Отменить</button><button class="primary" data-a="h-save">Сохранить</button></span></div></section>';
 }
@@ -989,6 +1070,7 @@ function syncInner(){
 function settingsHtml(){
   return '<h1>Настройки</h1>'
    +'<section class="card" id="syncCard">'+syncInner()+'</section>'
+   +'<section class="card"><h2>Цель по весу</h2><div class="inline"><div class="amount sm" style="flex:1"><input id="wgoal" inputmode="decimal" placeholder="например 80" value="'+(D.profile.weightGoal?String(D.profile.weightGoal).replace(".",","):"")+'" aria-label="Цель по весу"><span>кг</span></div><button class="primary" data-a="goal-save">Сохранить</button></div><p class="small muted">Реальный темп — 0,5–1 кг в неделю. Быстрее обычно возвращается обратно.</p></section>'
    +habitsEditor()
    +'<h2 style="margin-top:6px">Бюджет</h2>'+(D.fin.cfg?finFormHtml(false):'<section class="card"><p class="small muted">Бюджет ещё не настроен.</p><button class="btn" data-a="tab" data-v="money">Настроить во вкладке «Деньги»</button></section>')
    +debtsEditor()
@@ -1079,7 +1161,7 @@ const Sync={
     try{
       const remote=await pullRemote();
       if(remote){
-        const merged=merge(D,remote);
+        const merged=upgrade(merge(D,remote));
         if(canon(merged)!==canon(D)){D=merged;ls.set(KEY,D);if(U.tab!=="settings")render()}
         if(canon(merged)!==canon(normalize(remote)))await pushRemote();
       }else await pushRemote();
@@ -1130,8 +1212,14 @@ document.addEventListener("click",e=>{
     case "icat":U.icat=v;render();return;
     case "txdel":{const x=D.fin.tx[id];if(x)D.fin.tx[id]={...x,del:true,at:Date.now()};U.confirm=null;save();render();toast("Удалено");return}
     case "closeday":act(()=>toggleClose(t)?"День закрыт по деньгам":null);return;
-    case "save":{const m=model();if(m)act(()=>{patchPeriod(m.per.key,{saved:Number(v),savedDate:t});return "Отложено в подушку"});return}
-    case "unsave":{const m=model();if(m){patchPeriod(m.per.key,{saved:0,savedDate:null});save();render()}return}
+    case "save":{const m=model();if(m)act(()=>{patchPeriod(m.per.key,{saved:Number(v),savedDate:t,saveFixed:false,saveSkip:false});return "Отложено в подушку"});return}
+    case "unsave":{const m=model();if(m){patchPeriod(m.per.key,{saved:0,savedDate:null,saveFixed:false,saveSkip:false});save();render()}return}
+    case "saveskip":{const m=model();if(m){patchPeriod(m.per.key,{saveSkip:true,saveFixed:false,saved:0,savedDate:null});save();render();toast("Ок, в этом периоде без подушки. Деньги вернулись в лимит")}return}
+    case "savecustom":U.saveCustom=!U.saveCustom;render();{const sa=$("saveAmt");if(sa)sa.focus()}return;
+    case "fixopen":U.fixOpen=!U.fixOpen;render();{const r=$("real");if(r)r.focus()}return;
+    case "count":addCount(id,+v);return;
+    case "weighdel":{const w=D.weights[U.view];if(w){D.weights[U.view]={...w,del:true,at:Date.now()};U.weighOpen=false;save();render()}return}
+    case "goal-save":{const g=parseAmt($("wgoal").value);D.profile={...D.profile,weightGoal:g>0?g:0,at:Date.now()};save();render();toast("Цель по весу сохранена");return}
     case "paid":{const m=model();if(!m)return;const b=m.cur.bills.find(x=>x.id===id);act(()=>{patchPeriod(m.per.key,{paid:{...(m.pdoc.paid||{}),[id]:{d:t,amt:b?b.amount:0}}});return b?b.name+" оплачено":"Оплачено"});return}
     case "leftover":{const m=model();if(m&&m.prevPer)act(()=>{patchPeriod(m.prevPer.key,{extra:Number(v),extraDate:t});return "Остаток в подушке"});return}
     case "leftskip":{const m=model();if(m&&m.prevPer){patchPeriod(m.prevPer.key,{leftDone:true});save();render()}return}
@@ -1143,7 +1231,7 @@ document.addEventListener("click",e=>{
     case "h-down":if(i<U.hd.length-1){[U.hd[i+1],U.hd[i]]=[U.hd[i],U.hd[i+1]];render()}return;
     case "h-del":U.hd.splice(i,1);render();return;
     case "h-cancel":U.hd=null;render();toast("Изменения отменены");return;
-    case "h-save":{const hs=U.hd.map(h=>({...h,name:String(h.name||"").trim(),why:String(h.why||"").trim()})).filter(h=>h.name);
+    case "h-save":{const hs=U.hd.map(h=>({...h,name:String(h.name||"").trim(),why:String(h.why||"").trim(),...(h.type==="counter"?{target:parseInt(h.target,10)>0?parseInt(h.target,10):100}:{})})).filter(h=>h.name);
       if(!hs.length){toast("Нужна хотя бы одна привычка");return}
       D.habits=hs;D.habitsAt=Date.now();U.hd=null;save();render();toast("Привычки сохранены");return}
     case "b-add":U.bd.push({id:uid(),name:"",amount:"",day:""});render();return;
@@ -1168,7 +1256,7 @@ document.addEventListener("click",e=>{
     case "export":{
       const blob=new Blob([JSON.stringify(D,null,1)],{type:"application/json"}),url=URL.createObjectURL(blob),link=document.createElement("a");
       link.href=url;link.download="kvest-planer-"+t+".json";document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);toast("Копия сохранена в «Загрузки»");return}
-    case "import-yes":if(U.pendingImport){D=merge(D,U.pendingImport.data);U.pendingImport=null;U.hd=null;U.bd=null;U.dd=null;save();render();toast("Данные объединены")}return;
+    case "import-yes":if(U.pendingImport){D=upgrade(merge(D,U.pendingImport.data));U.pendingImport=null;U.hd=null;U.bd=null;U.dd=null;save();render();toast("Данные объединены")}return;
     case "import-no":U.pendingImport=null;render();return;
     case "reset-ask":U.resetAsk=true;render();return;
     case "reset-no":U.resetAsk=false;render();return;
@@ -1210,7 +1298,11 @@ document.addEventListener("submit",e=>{
     return;
   }
   if(f==="payin"){const inp=fm.querySelector("input");const v=parseAmt(inp.value),m=model();if(!(v>=0)){toast("Введи сумму");return}if(!m)return;patchPeriod(m.per.key,{income:v});inp.value="";save();render();toast("Сумма выплаты записана");return}
-  if(f==="recalc"){const v=parseAmt($("real").value),m=model();if(!(v>=0)){toast("Введи сумму");return}if(!m)return;patchPeriod(m.per.key,{anchor:{d:t,amount:v,skip:Object.keys(m.pdoc.paid||{})}});$("real").value="";save();toast("Пересчитано");U.mv="today";setTab("money");return}
+  if(f==="recalc"){const v=parseAmt($("real").value),m=model();if(!(v>=0)){toast("Введи сумму");return}if(!m)return;patchPeriod(m.per.key,{anchor:{d:t,amount:v,skip:Object.keys(m.pdoc.paid||{})}});$("real").value="";U.fixOpen=false;save();toast("Пересчитано от "+rub(v));U.mv="today";setTab("money");return}
+  if(f==="savecustom"){const v=parseAmt($("saveAmt").value),m=model();if(!(v>=0)){toast("Введи сумму");return}if(!m)return;U.saveCustom=false;
+    act(()=>{patchPeriod(m.per.key,{saved:v,saveFixed:true,saveSkip:false,savedDate:v>0?t:null});return v>0?"Отложено "+rub(v):null});return}
+  if(f==="weigh"){const v=parseAmt($("kgIn").value);if(!(v>=30&&v<=300)){toast("Введи вес в кг, например 92,4");return}U.weighOpen=false;
+    act(()=>{D.weights[U.view]={kg:Math.round(v*10)/10,at:Date.now()};return "Вес "+String(Math.round(v*10)/10).replace(".",",")+" кг"});return}
   if(f==="debtpay"){const id=fm.dataset.id,inp=$("debtAmt"),v=parseAmt(inp.value),d=D.fin.debts[id];if(!(v>0)||!d){toast("Введи сумму");return}
     U.payDebt=null;act(()=>{const tid=uid();D.fin.tx[tid]={id:tid,d:t,ts:Date.now(),amt:Math.round(v*100)/100,kind:"exp",cat:"debt",debtId:id,note:"Досрочно",at:Date.now()};return "Удар по долгу «"+d.name+"»"});
     if(debtLeft(D.fin.debts[id])<=0)toast("Долг «"+esc(d.name)+"» повержен!",true);return}

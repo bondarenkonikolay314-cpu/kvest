@@ -1,5 +1,5 @@
 /* Offline support: the app shell is served network-first (so updates arrive) with a cache fallback; fonts cache-first. GitHub API is never cached. */
-const CACHE = "kvest-v1";
+const CACHE = "kvest-v2";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icon.svg", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", e => {
